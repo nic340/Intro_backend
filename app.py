@@ -1,156 +1,162 @@
 from fastapi import FastAPI, HTTPException
 from sqlmodel import Session, select
 from database import create_db_and_tables, engine
-from models import Store, Transaction, Fee
+from models import User, Product, Order
 from contextlib import asynccontextmanager
 
-# Lifecycle manager to create tables on startup [cite: 265]
+
+# LIFECYCLE
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
     yield
 
+
 app = FastAPI(lifespan=lifespan)
 
-# ==========================================
-#  STORE CRUD
-# ==========================================
+# ==================================================
+# USER CRUD
+# ==================================================
 
-# Create Store
-@app.post("/stores/")
-def create_store(store: Store):
+@app.post("/users/")
+def create_user(user: User):
     with Session(engine) as session:
-        session.add(store)
+        session.add(user)
         session.commit()
-        session.refresh(store)
-        return store
+        session.refresh(user)
+        return user
 
-# Read All Stores
-@app.get("/stores/")
-def read_stores():
-    with Session(engine) as session:
-        statement = select(Store)
-        results = session.exec(statement).all()
-        return results
 
-# Read One Store
-@app.get("/stores/{store_id}")
-def read_store(store_id: int):
+@app.get("/users/")
+def read_users():
     with Session(engine) as session:
-        store = session.get(Store, store_id)
-        if not store:
-            raise HTTPException(status_code=404, detail="Store not found")
-        return store
+        return session.exec(select(User)).all()
 
-# Update Store
-@app.put("/stores/{store_id}")
-def update_store(store_id: int, store_data: Store):
+
+@app.get("/users/{user_id}")
+def read_user(user_id: int):
     with Session(engine) as session:
-        store = session.get(Store, store_id)
-        if not store:
-            raise HTTPException(status_code=404, detail="Store not found")
-        store.name = store_data.name
-        store.address = store_data.address
-        session.add(store)
+        user = session.get(User, user_id)
+        if not user:
+            raise HTTPException(404, "User not found")
+        return user
+
+
+@app.put("/users/{user_id}")
+def update_user(user_id: int, data: User):
+    with Session(engine) as session:
+        user = session.get(User, user_id)
+        if not user:
+            raise HTTPException(404, "User not found")
+        user.name = data.name
+        user.email = data.email
         session.commit()
-        session.refresh(store)
-        return store
+        session.refresh(user)
+        return user
 
-# Delete Store
-@app.delete("/stores/{store_id}")
-def delete_store(store_id: int):
+
+@app.delete("/users/{user_id}")
+def delete_user(user_id: int):
     with Session(engine) as session:
-        store = session.get(Store, store_id)
-        if not store:
-            raise HTTPException(status_code=404, detail="Store not found")
-        session.delete(store)
+        user = session.get(User, user_id)
+        if not user:
+            raise HTTPException(404, "User not found")
+        session.delete(user)
         session.commit()
-        return {"message": "Store deleted successfully"}
+        return {"message": "User deleted successfully"}
 
-# ==========================================
-#  TRANSACTION CRUD
-# ==========================================
 
-# Create Transaction
-@app.post("/transactions/")
-def create_transaction(transaction: Transaction):
+# ==================================================
+# PRODUCT CRUD
+# ==================================================
+
+@app.post("/products/")
+def create_product(product: Product):
     with Session(engine) as session:
-        session.add(transaction)
+        session.add(product)
         session.commit()
-        session.refresh(transaction)
-        return transaction
+        session.refresh(product)
+        return product
 
-# Read All Transactions
-@app.get("/transactions/")
-def read_transactions():
-    with Session(engine) as session:
-        statement = select(Transaction)
-        results = session.exec(statement).all()
-        return results
 
-# Read One Transaction
-@app.get("/transactions/{transaction_id}")
-def read_transaction(transaction_id: int):
+@app.get("/products/")
+def read_products():
     with Session(engine) as session:
-        transaction = session.get(Transaction, transaction_id)
-        if not transaction:
-            raise HTTPException(status_code=404, detail="Transaction not found")
-        return transaction
+        return session.exec(select(Product)).all()
 
-# Update Transaction Status
-@app.patch("/transactions/{transaction_id}")
-def update_transaction_status(transaction_id: int, status: str):
+
+@app.get("/products/{product_id}")
+def read_product(product_id: int):
     with Session(engine) as session:
-        transaction = session.get(Transaction, transaction_id)
-        if not transaction:
-            raise HTTPException(status_code=404, detail="Transaction not found")
-        transaction.status = status
-        session.add(transaction)
+        product = session.get(Product, product_id)
+        if not product:
+            raise HTTPException(404, "Product not found")
+        return product
+
+
+@app.put("/products/{product_id}")
+def update_product(product_id: int, data: Product):
+    with Session(engine) as session:
+        product = session.get(Product, product_id)
+        if not product:
+            raise HTTPException(404, "Product not found")
+        product.name = data.name
+        product.price = data.price
+        product.stock = data.stock
         session.commit()
-        session.refresh(transaction)
-        return transaction
+        session.refresh(product)
+        return product
 
-# Delete Transaction
-@app.delete("/transactions/{transaction_id}")
-def delete_transaction(transaction_id: int):
+
+@app.delete("/products/{product_id}")
+def delete_product(product_id: int):
     with Session(engine) as session:
-        transaction = session.get(Transaction, transaction_id)
-        if not transaction:
-            raise HTTPException(status_code=404, detail="Transaction not found")
-        session.delete(transaction)
+        product = session.get(Product, product_id)
+        if not product:
+            raise HTTPException(404, "Product not found")
+        session.delete(product)
         session.commit()
-        return {"message": "Transaction deleted"}
+        return {"message": "Product deleted"}
 
-# ==========================================
-#  FEE CRUD
-# ==========================================
 
-# Create Fee
-@app.post("/fees/")
-def create_fee(fee: Fee):
+# ==================================================
+# ORDER CRUD
+# ==================================================
+
+@app.post("/orders/")
+def create_order(order: Order):
     with Session(engine) as session:
-        session.add(fee)
+        session.add(order)
         session.commit()
-        session.refresh(fee)
-        return fee
+        session.refresh(order)
+        return order
 
-# Read Fee by Transaction ID
-@app.get("/fees/{transaction_id}")
-def read_fee(transaction_id: int):
-    with Session(engine) as session:
-        statement = select(Fee).where(Fee.transaction_id == transaction_id)
-        result = session.exec(statement).first()
-        if not result:
-            raise HTTPException(status_code=404, detail="Fee not found")
-        return result
 
-# Delete Fee
-@app.delete("/fees/{fee_id}")
-def delete_fee(fee_id: int):
+@app.get("/orders/")
+def read_orders():
     with Session(engine) as session:
-        fee = session.get(Fee, fee_id)
-        if not fee:
-            raise HTTPException(status_code=404, detail="Fee not found")
+        return session.exec(select(Order)).all()
+
+
+@app.get("/orders/{order_id}")
+def read_order(order_id: int):
+    with Session(engine) as session:
+        order = session.get(Order, order_id)
+        if not order:
+            raise HTTPException(404, "Order not found")
+        return order
+
+
+@app.delete("/orders/{order_id}")
+def delete_order(order_id: int):
+    with Session(engine) as session:
+        order = session.get(Order, order_id)
+        if not order:
+            raise HTTPException(404, "Order not found")
+        session.delete(order)
+        session.commit()
+        return {"message": "Order deleted"}
+04, detail="Fee not found")
         session.delete(fee)
         session.commit()
         return {"message": "Fee deleted"}
